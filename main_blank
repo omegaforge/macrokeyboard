@@ -1,0 +1,287 @@
+
+#include "Keyboard.h"
+#include "Mouse.h"
+
+#define KEY_MUTE        0x7F
+#define KEY_VOLUMEUP      0x80
+#define KEY_VOLUMEDOWN    0x81
+
+#define KEY_KEYPAD_0      0x62
+#define KEY_KEYPAD_1      0x59
+#define KEY_KEYPAD_2      0x5A
+#define KEY_KEYPAD_3      0x5B
+#define KEY_KEYPAD_4      0x5C
+#define KEY_KEYPAD_5      0x5D
+#define KEY_KEYPAD_6      0x5E
+#define KEY_KEYPAD_7      0x5F
+#define KEY_KEYPAD_8      0x60
+#define KEY_KEYPAD_9      0x61
+#define KEY_KEYPAD_DECIMAL    235
+#define KEY_KEYPAD_ENTER    224
+#define KEY_KEYPAD_PLUS   223
+#define KEY_KEYPAD_MINUS    222
+#define KEY_KEYPAD_MULTIPLY   221
+#define KEY_KEYPAD_DIVIDE   220
+#define KEY_KEYPAD_NUMLOCK    0x53
+#define KEY_KEYPAD_EQUALS   0x67
+
+#include <Adafruit_NeoPixel.h>
+#ifdef __AVR__
+#include <avr/power.h> // Required for 16 MHz Adafruit Trinket
+#endif
+
+#define PIN        9
+
+#define NUMPIXELS 3
+
+Adafruit_NeoPixel pixels(NUMPIXELS, PIN, NEO_GRB + NEO_KHZ800);
+
+#include <Encoder.h> //Library for simple interfacing with encoders (up to two)
+//low performance ender response, pins do not have interrupts
+Encoder RotaryEncoderA(A3, A2); //the LEFT encoder (encoder A)
+
+#include <Keypad.h>
+// This library is for interfacing with the 4x4 Matrix
+//
+// Can be installed from the library manager, search for "keypad"
+// and install the one by Mark Stanley and Alexander Brevig
+// https://playground.arduino.cc/Code/Keypad/
+
+const byte ROWS = 3; //four rows
+const byte COLS = 3; //four columns
+
+char keys[ROWS][COLS] = {
+  {'1', '2', '3'},  // again the keyboard hardware is not a 4x4 grid...
+  {'4', '5', '6'},
+  {'7', '8', '9'},  //"This won't confuse anyone."
+};
+
+// Variables will change:
+int modePushCounter = 0;   // counter for the number of button presses
+int buttonState = 0;         // current state of the button
+int lastButtonState = 0;     // previous state of the button
+
+long positionEncoderA  = -999; //encoderA LEFT position variable
+
+const int ModeButton = 10;    // the pin that the Modebutton is attached to
+
+byte rowPins[ROWS] = {5, 6, 7}; //connect to the row pinouts of the keypad
+byte colPins[COLS] = {2, 3, 4}; //connect to the column pinouts of the keypad
+Keypad keypad = Keypad( makeKeymap(keys), rowPins, colPins, ROWS, COLS );
+
+void setup() {
+  pixels.begin();
+  Mouse.begin();
+  pinMode(ModeButton, INPUT_PULLUP);  // initialize the button pin as a input:
+  Serial.begin(9600); // initialize serial communication:
+
+  Serial.begin(9600);
+  Keyboard.begin();
+  pixels.setPixelColor(0, 0, 20 , 0);
+  pixels.show();
+}
+
+
+void loop() {
+  char key = keypad.getKey();
+  encoderA();
+
+  checkModeButton();
+
+  switch (modePushCounter) { // switch between keyboard configurations:
+    case 0:    //  Application Alpha or MODE 0
+      pixels.setPixelColor(0, 0, 20 , 0);
+      pixels.setPixelColor(1, 0, 0 , 0);
+      pixels.setPixelColor(2, 0, 0 , 0);
+      pixels.show();
+      if (key) {
+        Serial.println(key);
+        switch (key) {
+          case '1':
+            Keyboard.println("Alpha key1"); 
+            break;
+          case '2':
+            Keyboard.println("Alpha key2");
+            break;
+          case '3':
+            Keyboard.println("Alpha key3");
+            break;
+          case '4':
+            Keyboard.println("Alpha key4");
+            break;
+          case '5':
+            Keyboard.println("Alpha key5");
+            break;
+          case '6':
+            Keyboard.println("Alpha key6");
+            break;
+          case '7':
+            Keyboard.println("Alpha key7");
+            break;
+          case '8': 
+          Keyboard.println("Alpha key8");
+            break;
+          case '9':
+            Keyboard.println("Alpha key9");
+            break;
+        }
+        delay(100); Keyboard.releaseAll(); // this releases the buttons
+      }
+      break;
+
+    case 1:    //  Application Beta or MODE 1
+      pixels.setPixelColor(0, 0, 0 , 0);
+      pixels.setPixelColor(1, 0, 20 , 0);
+      pixels.setPixelColor(2, 0, 0 , 0);
+      pixels.show();
+      if (key) {
+        Serial.println(key);
+        switch (key) {
+          case '1':
+            Keyboard.println("Beta key1"); 
+            break;
+          case '2':
+            Keyboard.println("Beta key2"); 
+            break;
+          case '3':
+            Keyboard.println("Beta key3"); 
+            break;
+          case '4':
+            Keyboard.println("Beta key4"); 
+            break;
+          case '5':
+            Keyboard.println("Beta key5"); 
+            break;
+          case '6':
+            Keyboard.println("Beta key6"); 
+            break;
+          case '7':
+            Keyboard.println("Alpha key7"); 
+            break;
+          case '8':
+            Keyboard.println("Alpha key8"); 
+            break;
+          case '9':
+            Keyboard.println("Beta key9"); 
+            break;
+        }
+        delay(100); Keyboard.releaseAll(); // this releases the buttons
+      }
+      break;
+
+    case 2:    // Application Delta
+      pixels.setPixelColor(0, 0, 0 , 0);
+      pixels.setPixelColor(1, 0, 0 , 0);
+      pixels.setPixelColor(2, 0, 20 , 0);
+      pixels.show();
+      if (key) {
+        Serial.println(key);
+        switch (key) {
+          case '1':
+            Keyboard.println("Delta key1"); 
+            break;
+          case '2':
+            Keyboard.println("Delta key2"); 
+            break;
+          case '3':
+            Keyboard.println("Delta key3"); 
+            break;
+          case '4':
+            Keyboard.println("Delta key4"); 
+            break;
+          case '5':
+            Keyboard.println("Delta key5"); 
+            break;
+          case '6':
+            Keyboard.println("Delta key6"); 
+            break;
+          case '7':
+            Keyboard.println("Alpha key7");
+            break;
+          case '8':
+            Keyboard.println("Alpha key8");
+            break;
+          case '9':
+            Keyboard.println("Delta key9"); 
+            break;
+        }
+        delay(100); Keyboard.releaseAll(); // this releases the buttons
+      }
+      break;
+
+    case 3:    // Application Gamma
+      pixels.setPixelColor(0, 0, 20 , 0);
+      pixels.setPixelColor(1, 0, 20 , 0);
+      pixels.setPixelColor(2, 0, 20 , 0);
+      pixels.show();
+      if (key) {
+        Serial.println(key);
+        switch (key) {
+          case '1':
+            Keyboard.println("nice shot"); 
+            break;
+          case '2':
+            Keyboard.println("great pass"); 
+            break;
+          case '3':
+            Keyboard.println("great save"); 
+            break;
+          case '4':
+            Keyboard.println("thanks"); 
+            break;
+          case '5':
+            Keyboard.println("i got it"); 
+            break;
+          case '6':
+            Keyboard.println("take the shot"); 
+            break;
+          case '7':
+            Keyboard.println("Alpha key7");
+            break;
+          case '8':
+            Keyboard.println("Alpha key8");
+            break;
+          case '9':
+            Keyboard.println("oh no"); break;
+        }
+        delay(100); Keyboard.releaseAll(); // this releases the buttons
+      }
+      break;
+  }
+  delay(1);  // delay in between reads for stability
+
+}
+
+void checkModeButton() {
+  buttonState = digitalRead(ModeButton);
+  if (buttonState != lastButtonState) { // compare the buttonState to its previous state
+    if (buttonState == LOW) { // if the state has changed, increment the counter
+      // if the current state is LOW then the button cycled:
+      modePushCounter++;
+      Serial.println("pressed");
+      Serial.print("number of button pushes: ");
+      Serial.println(modePushCounter);
+    }
+    delay(50); // Delay a little bit to avoid bouncing
+  }
+  lastButtonState = buttonState; // save the current state as the last state, for next time through the loop
+  if (modePushCounter > 3) { //reset the counter after 4 presses (remember we start counting at 0)
+    modePushCounter = 0;
+  }
+}
+
+void encoderA() {
+  long newPos = RotaryEncoderA.read() / 4; //When the encoder lands on a valley, this is an increment of 4.
+
+  if (newPos != positionEncoderA && newPos > positionEncoderA) {
+    positionEncoderA = newPos;
+    //Serial.println(positionEncoderA);
+    Keyboard.write(KEY_KEYPAD_PLUS);
+  }
+
+  if (newPos != positionEncoderA && newPos < positionEncoderA) {
+    positionEncoderA = newPos;
+    //Serial.println(positionEncoderA);
+    Keyboard.write(KEY_KEYPAD_MINUS);
+  }
+}
