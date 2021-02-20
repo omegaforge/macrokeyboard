@@ -81,7 +81,6 @@ void setup() {
   pixels.show();
 }
 
-
 void loop() {
   char key = keypad.getKey();
   encoderA();
