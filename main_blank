@@ -56,14 +56,28 @@ char keys[ROWS][COLS] = {
   {'7', '8', '9'},  //"This won't confuse anyone."
 };
 
+
 // Variables will change:
 int modePushCounter = 0;   // counter for the number of button presses
-int buttonState = 0;         // current state of the button
-int lastButtonState = 0;     // previous state of the button
+int modebuttonState = 0;         // current state of the button
+int lastmodebuttonState = 0;     // previous state of the button
+int wheelbuttonState = 0;
+int B2buttonState = 0;
+int B3buttonState = 0;
+int B4buttonState = 0;
+int wheelcommand = 0;
+int pot1Value = 0;
+int pot2Value = 0;
 
 long positionEncoderA  = -999; //encoderA LEFT position variable
 
 const int ModeButton = 10;    // the pin that the Modebutton is attached to
+const int WheelButton = 8;
+const int button2 = 16;
+const int button3 = 14;
+const int button4 = 15;
+const int pot1 = A0;
+const int pot2 = A1;
 
 byte rowPins[ROWS] = {5, 6, 7}; //connect to the row pinouts of the keypad
 byte colPins[COLS] = {2, 3, 4}; //connect to the column pinouts of the keypad
@@ -72,10 +86,13 @@ Keypad keypad = Keypad( makeKeymap(keys), rowPins, colPins, ROWS, COLS );
 void setup() {
   pixels.begin();
   Mouse.begin();
-  pinMode(ModeButton, INPUT_PULLUP);  // initialize the button pin as a input:
+  pinMode(ModeButton, INPUT_PULLUP);
+  pinMode(WheelButton, INPUT);
+  pinMode(button2, INPUT);
+  pinMode(button3, INPUT_PULLUP);
+  pinMode(button4, INPUT_PULLUP);
+  // initialize the button pin as a input:
   Serial.begin(9600); // initialize serial communication:
-
-  Serial.begin(9600);
   Keyboard.begin();
   pixels.setPixelColor(0, 0, 20 , 0);
   pixels.show();
@@ -84,8 +101,14 @@ void setup() {
 void loop() {
   char key = keypad.getKey();
   encoderA();
-
   checkModeButton();
+  checkbuttons();
+
+  int pot1Value = analogRead(pot1);
+  int pot2Value = analogRead(pot2);
+
+
+  //checkwheelbutton();
 
   switch (modePushCounter) { // switch between keyboard configurations:
     case 0:    //  Application Alpha or MODE 0
@@ -97,7 +120,7 @@ void loop() {
         Serial.println(key);
         switch (key) {
           case '1':
-            Keyboard.println("Alpha key1"); 
+            Keyboard.println("Alpha key1");
             break;
           case '2':
             Keyboard.println("Alpha key2");
@@ -106,22 +129,23 @@ void loop() {
             Keyboard.println("Alpha key3");
             break;
           case '4':
-            Keyboard.println("Alpha key4");
+            Keyboard.println("Alpha key4"); 
             break;
           case '5':
-            Keyboard.println("Alpha key5");
+            Keyboard.println("Alpha key5"); 
             break;
           case '6':
-            Keyboard.println("Alpha key6");
+            Keyboard.println("Alpha key6"); 
             break;
           case '7':
             Keyboard.println("Alpha key7");
             break;
-          case '8': 
-          Keyboard.println("Alpha key8");
+          case '8':
+            Keyboard.println("Alpha key8");
             break;
           case '9':
-            Keyboard.println("Alpha key9");
+            //Keyboard.println("Alpha key9");
+            Mouse.click(MOUSE_LEFT);
             break;
         }
         delay(100); Keyboard.releaseAll(); // this releases the buttons
@@ -155,14 +179,13 @@ void loop() {
             Keyboard.println("Beta key6"); 
             break;
           case '7':
-            Keyboard.println("Alpha key7"); 
+            Keyboard.println("Alpha key7");
             break;
           case '8':
-            Keyboard.println("Alpha key8"); 
+            Keyboard.println("Alpha key8");
             break;
           case '9':
-            Keyboard.println("Beta key9"); 
-            break;
+            Keyboard.println("Beta key9"); break;
         }
         delay(100); Keyboard.releaseAll(); // this releases the buttons
       }
@@ -177,22 +200,22 @@ void loop() {
         Serial.println(key);
         switch (key) {
           case '1':
-            Keyboard.println("Delta key1"); 
+            Keyboard.println("Delta key1");
             break;
           case '2':
-            Keyboard.println("Delta key2"); 
+            Keyboard.println("Delta key2");
             break;
           case '3':
-            Keyboard.println("Delta key3"); 
+            Keyboard.println("Delta key3");
             break;
           case '4':
-            Keyboard.println("Delta key4"); 
+            Keyboard.println("Delta key4");
             break;
           case '5':
-            Keyboard.println("Delta key5"); 
+            Keyboard.println("Delta key5");
             break;
           case '6':
-            Keyboard.println("Delta key6"); 
+            Keyboard.println("Delta key6");
             break;
           case '7':
             Keyboard.println("Alpha key7");
@@ -201,8 +224,7 @@ void loop() {
             Keyboard.println("Alpha key8");
             break;
           case '9':
-            Keyboard.println("Delta key9"); 
-            break;
+            Keyboard.println("Delta key9"); break;
         }
         delay(100); Keyboard.releaseAll(); // this releases the buttons
       }
@@ -217,31 +239,32 @@ void loop() {
         Serial.println(key);
         switch (key) {
           case '1':
-            Keyboard.println("nice shot"); 
+            Keyboard.println("nice shot");
             break;
           case '2':
-            Keyboard.println("great pass"); 
+            Keyboard.println("great pass");
             break;
           case '3':
-            Keyboard.println("great save"); 
+            Keyboard.println("great save");
             break;
           case '4':
-            Keyboard.println("thanks"); 
+            Keyboard.println("thanks");
             break;
           case '5':
-            Keyboard.println("i got it"); 
+            Keyboard.println("i got it");
             break;
           case '6':
-            Keyboard.println("take the shot"); 
+            Keyboard.println("take the shot");
             break;
           case '7':
-            Keyboard.println("Alpha key7");
+            Keyboard.println("BOOM")
             break;
           case '8':
-            Keyboard.println("Alpha key8");
+            Keyboard.println("PWN");
             break;
           case '9':
-            Keyboard.println("oh no"); break;
+            Keyboard.println("oh no");
+            break;
         }
         delay(100); Keyboard.releaseAll(); // this releases the buttons
       }
@@ -252,9 +275,9 @@ void loop() {
 }
 
 void checkModeButton() {
-  buttonState = digitalRead(ModeButton);
-  if (buttonState != lastButtonState) { // compare the buttonState to its previous state
-    if (buttonState == LOW) { // if the state has changed, increment the counter
+  modebuttonState = digitalRead(ModeButton);
+  if (modebuttonState != lastmodebuttonState) { // compare the modebuttonState to its previous state
+    if (modebuttonState == HIGH) { // if the state has changed, increment the counter
       // if the current state is LOW then the button cycled:
       modePushCounter++;
       Serial.println("pressed");
@@ -263,7 +286,7 @@ void checkModeButton() {
     }
     delay(50); // Delay a little bit to avoid bouncing
   }
-  lastButtonState = buttonState; // save the current state as the last state, for next time through the loop
+  lastmodebuttonState = modebuttonState; // save the current state as the last state, for next time through the loop
   if (modePushCounter > 3) { //reset the counter after 4 presses (remember we start counting at 0)
     modePushCounter = 0;
   }
@@ -282,5 +305,44 @@ void encoderA() {
     positionEncoderA = newPos;
     //Serial.println(positionEncoderA);
     Keyboard.write(KEY_KEYPAD_MINUS);
+  }
+}
+
+void checkwheelbutton() {
+  wheelbuttonState = digitalRead(WheelButton);
+  if (wheelbuttonState == HIGH) {
+    // turn LED on:
+    if (wheelcommand == 0) {
+      Keyboard.press(KEY_LEFT_SHIFT);
+      Keyboard.press('c');
+      Keyboard.release(KEY_LEFT_SHIFT);
+      wheelcommand = 1;
+      Serial.println("wheel pressed");
+    }
+  } else {
+    wheelcommand = 0;
+  }
+}
+void checkbuttons() {
+  B2buttonState = digitalRead(button2);
+  if (B2buttonState == HIGH) {
+    //resetFunc();
+    Serial.println("button 2");
+  } else {
+
+  }
+  B3buttonState = digitalRead(button3);
+  if (B3buttonState == HIGH) {
+    //resetFunc();
+    Serial.println("button 3");
+  } else {
+
+  }
+  B4buttonState = digitalRead(button4);
+  if (B4buttonState == HIGH) {
+    //resetFunc();
+    Serial.println("button 4");
+  } else {
+
   }
 }
